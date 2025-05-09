@@ -8,12 +8,14 @@ interface SettingsModalProps {
   currentSettings: {
     boardSize: number;
     minePercentage: number;
+    vibrationEnabled: boolean;
   };
 }
 
 export interface GameSettings {
   boardSize: number;
   minePercentage: number;
+  vibrationEnabled: boolean;
 }
 
 const PRESET_DIFFICULTIES = {
@@ -33,6 +35,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   const [boardSize, setBoardSize] = useState(currentSettings.boardSize.toString());
   const [minePercentage, setMinePercentage] = useState((currentSettings.minePercentage * 100).toString());
   const [selectedDifficulty, setSelectedDifficulty] = useState<Difficulty>('custom');
+  const [vibrationEnabled, setVibrationEnabled] = useState(currentSettings.vibrationEnabled);
 
   useEffect(() => {
     // Determine initial difficulty based on current settings
@@ -47,6 +50,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
     setSelectedDifficulty(matchingDifficulty?.[0] ?? 'custom');
     setBoardSize(currentSettings.boardSize.toString());
     setMinePercentage((currentSettings.minePercentage * 100).toString());
+    setVibrationEnabled(currentSettings.vibrationEnabled);
   }, [currentSettings]);
 
   const handleApply = () => {
@@ -57,6 +61,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
     onApplySettings({
       boardSize: size,
       minePercentage: percentage,
+      vibrationEnabled,
     });
     onClose();
   };
@@ -163,6 +168,17 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                     </View>
                   </View>
                   <Text style={styles.hint}>Mínimo: 10%, Máximo: 30%</Text>
+                </View>
+
+                <Text style={styles.sectionTitle}>Configurações Adicionais</Text>
+                <View style={styles.optionContainer}>
+                  <Text style={styles.label}>Vibração ao marcar bandeira:</Text>
+                  <TouchableOpacity
+                    style={[styles.toggleButton, vibrationEnabled && styles.toggleButtonActive]}
+                    onPress={() => setVibrationEnabled(!vibrationEnabled)}
+                  >
+                    <Text style={styles.toggleButtonText}>{vibrationEnabled ? 'Ativada' : 'Desativada'}</Text>
+                  </TouchableOpacity>
                 </View>
 
                 <TouchableOpacity
@@ -313,6 +329,31 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#e0e0e0',
+  },
+  optionContainer: {
+    marginBottom: 15,
+  },
+  toggleButton: {
+    padding: 10,
+    backgroundColor: '#c0c0c0',
+    borderWidth: 2,
+    borderTopColor: '#fff',
+    borderLeftColor: '#fff',
+    borderBottomColor: '#808080',
+    borderRightColor: '#808080',
+    alignItems: 'center',
+    marginTop: 5,
+  },
+  toggleButtonActive: {
+    backgroundColor: '#a0a0a0',
+    borderTopColor: '#808080',
+    borderLeftColor: '#808080',
+    borderBottomColor: '#fff',
+    borderRightColor: '#fff',
+  },
+  toggleButtonText: {
+    fontSize: 14,
+    color: '#000',
   },
 });
 

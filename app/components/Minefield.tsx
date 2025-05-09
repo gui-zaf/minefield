@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity, Alert, ScrollView, Vibration, Animated, Dimensions } from 'react-native';
 import { styles } from '../styles/minefield.styles';
 import GameModal from './GameModal';
 import HelpModal from './HelpModal';
@@ -30,7 +30,16 @@ const MINE_PERCENTAGES = {
   hard: 0.18, // 18% of cells will be mines
 };
 
-const Minefield: React.FC = () => {
+interface MinefieldProps {
+  settings: {
+    boardSize: number;
+    minePercentage: number;
+    vibrationEnabled: boolean;
+  };
+  onSettingsChange: (settings: GameSettings) => void;
+}
+
+const Minefield: React.FC<MinefieldProps> = ({ settings, onSettingsChange }) => {
   const [difficulty, setDifficulty] = useState<Difficulty>('easy');
   const [board, setBoard] = useState<GameBoard>([]);
   const [gameStatus, setGameStatus] = useState<GameStatus>('ready');
@@ -44,7 +53,17 @@ const Minefield: React.FC = () => {
   const [customSettings, setCustomSettings] = useState<GameSettings>({
     boardSize: 5,
     minePercentage: 0.12,
+    vibrationEnabled: settings.vibrationEnabled,
   });
+  const [gameOver, setGameOver] = useState(false);
+  const [gameWon, setGameWon] = useState(false);
+  const [currentScore, setCurrentScore] = useState(0);
+  const [highScore, setHighScore] = useState(0);
+  const [showTutorial, setShowTutorial] = useState(true);
+  const [flagCount, setFlagCount] = useState(0);
+  const [totalMines, setTotalMines] = useState(0);
+  const [shakeAnimation] = useState(new Animated.Value(0));
+  const [flashOpacity] = useState(new Animated.Value(0));
 
   const getCurrentBoardSize = () => {
     return difficulty === 'custom' ? customSettings.boardSize : BOARD_SIZES[difficulty];
@@ -54,10 +73,11 @@ const Minefield: React.FC = () => {
     return difficulty === 'custom' ? customSettings.minePercentage : MINE_PERCENTAGES[difficulty];
   };
 
-  const handleCustomSettings = (settings: GameSettings) => {
-    setCustomSettings(settings);
+  const handleCustomSettings = (newSettings: GameSettings) => {
+    setCustomSettings(newSettings);
+    onSettingsChange(newSettings);
     setDifficulty('custom');
-    startNewGame('custom', settings);
+    startNewGame('custom', newSettings);
   };
 
   const startTimer = useCallback(() => {
@@ -165,6 +185,57 @@ const Minefield: React.FC = () => {
     return count;
   };
 
+  const triggerExplosionEffect = () => {
+    // Strong vibration pattern for explosion
+    Vibration.vibrate([0, 100, 100, 100, 100, 100]);
+    
+    // Shake animation
+    Animated.sequence([
+      Animated.timing(shakeAnimation, {
+        toValue: 10,
+        duration: 100,
+        useNativeDriver: true
+      }),
+      Animated.timing(shakeAnimation, {
+        toValue: -10,
+        duration: 100,
+        useNativeDriver: true
+      }),
+      Animated.timing(shakeAnimation, {
+        toValue: 10,
+        duration: 100,
+        useNativeDriver: true
+      }),
+      Animated.timing(shakeAnimation, {
+        toValue: 0,
+        duration: 100,
+        useNativeDriver: true
+      })
+    ]).start();
+
+    // Red flash animation
+    Animated.sequence([
+      // Fade in quickly
+      Animated.timing(flashOpacity, {
+        toValue: 0.7,
+        duration: 100,
+        useNativeDriver: true
+      }),
+      // Hold longer
+      Animated.timing(flashOpacity, {
+        toValue: 0.7,
+        duration: 200,
+        useNativeDriver: true
+      }),
+      // Fade out more slowly
+      Animated.timing(flashOpacity, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true
+      })
+    ]).start();
+  };
+
   const revealCell = (row: number, col: number) => {
     if (gameStatus === 'won' || gameStatus === 'lost' || board[row][col].isFlagged || board[row][col].isRevealed) {
       return;
@@ -190,6 +261,7 @@ const Minefield: React.FC = () => {
       setGameStatus('lost');
       stopTimer();
       setBoard(newBoard);
+      triggerExplosionEffect();
       return;
     }
 
@@ -243,6 +315,11 @@ const Minefield: React.FC = () => {
     setBoard(newBoard);
     
     setFlaggedMines(prev => prev + (newBoard[row][col].isFlagged ? 1 : -1));
+    
+    // Vibrate when placing/removing a flag if enabled
+    if (settings.vibrationEnabled) {
+      Vibration.vibrate(1); // Reduced to 1ms for a very subtle vibration
+    }
   };
 
   const checkWinCondition = (currentBoard: GameBoard) => {
@@ -297,84 +374,111 @@ const Minefield: React.FC = () => {
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.helpButton}
-          onPress={() => setHelpModalVisible(true)}
-        >
-          <Text style={styles.helpButtonText}>?</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.settingsButton}
-          onPress={() => setSettingsModalVisible(true)}
-        >
-          <Text style={styles.settingsButtonText}>⚙️</Text>
-        </TouchableOpacity>
-      </View>
+    <>
+      <Animated.View 
+        style={[
+          styles.container,
+          {
+            transform: [{
+              translateX: shakeAnimation
+            }]
+          }
+        ]}
+      >
+        <View style={styles.header}>
+          <TouchableOpacity
+            style={styles.helpButton}
+            onPress={() => setHelpModalVisible(true)}
+          >
+            <Text style={styles.helpButtonText}>?</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.settingsButton}
+            onPress={() => setSettingsModalVisible(true)}
+          >
+            <Text style={styles.settingsButtonText}>⚙️</Text>
+          </TouchableOpacity>
+        </View>
 
-      <GameHeader
-        remainingMines={Math.floor(getCurrentBoardSize() * getCurrentBoardSize() * getCurrentMinePercentage()) - flaggedMines}
-        gameTime={gameTime}
-        gameStatus={gameStatus}
-        onReset={() => startNewGame(difficulty)}
-      />
+        <GameHeader
+          remainingMines={Math.floor(getCurrentBoardSize() * getCurrentBoardSize() * getCurrentMinePercentage()) - flaggedMines}
+          gameTime={gameTime}
+          gameStatus={gameStatus}
+          onReset={() => startNewGame(difficulty)}
+        />
 
-      <View style={styles.board}>
-        {board.map((row, rowIndex) => (
-          <View key={rowIndex} style={styles.row}>
-            {row.map((_, colIndex) => (
-              <TouchableOpacity
-                key={`${rowIndex}-${colIndex}`}
-                style={board[rowIndex][colIndex].isRevealed ? styles.revealedCell : styles.cell}
-                onPress={() => revealCell(rowIndex, colIndex)}
-                onLongPress={() => toggleFlag(rowIndex, colIndex)}
-                onPressIn={handleCellPressIn}
-                onPressOut={handleCellPressOut}
-              >
-                <Text style={[
-                  styles.cellText,
-                  board[rowIndex][colIndex].isRevealed && 
-                  !board[rowIndex][colIndex].isMine && 
-                  getNumberStyle(board[rowIndex][colIndex].adjacentMines)
-                ]}>
-                  {board[rowIndex][colIndex].isRevealed
-                    ? board[rowIndex][colIndex].isMine
-                      ? '💣'
-                      : board[rowIndex][colIndex].adjacentMines > 0
-                      ? board[rowIndex][colIndex].adjacentMines.toString()
-                      : ''
-                    : board[rowIndex][colIndex].isFlagged
-                    ? '🚩'
-                    : ''}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        ))}
-      </View>
+        <View style={styles.board}>
+          {board.map((row, rowIndex) => (
+            <View key={rowIndex} style={styles.row}>
+              {row.map((_, colIndex) => (
+                <TouchableOpacity
+                  key={`${rowIndex}-${colIndex}`}
+                  style={board[rowIndex][colIndex].isRevealed ? styles.revealedCell : styles.cell}
+                  onPress={() => revealCell(rowIndex, colIndex)}
+                  onLongPress={() => toggleFlag(rowIndex, colIndex)}
+                  onPressIn={handleCellPressIn}
+                  onPressOut={handleCellPressOut}
+                >
+                  <Text style={[
+                    styles.cellText,
+                    board[rowIndex][colIndex].isRevealed && 
+                    !board[rowIndex][colIndex].isMine && 
+                    getNumberStyle(board[rowIndex][colIndex].adjacentMines)
+                  ]}>
+                    {board[rowIndex][colIndex].isRevealed
+                      ? board[rowIndex][colIndex].isMine
+                        ? '💣'
+                        : board[rowIndex][colIndex].adjacentMines > 0
+                        ? board[rowIndex][colIndex].adjacentMines.toString()
+                        : ''
+                      : board[rowIndex][colIndex].isFlagged
+                      ? '🚩'
+                      : ''}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          ))}
+        </View>
 
-      <GameModal
-        visible={modalVisible}
-        isVictory={gameStatus === 'won'}
-        onRestart={() => startNewGame(difficulty)}
-      />
+        <GameModal
+          visible={modalVisible}
+          isVictory={gameStatus === 'won'}
+          onRestart={() => startNewGame(difficulty)}
+        />
 
-      <HelpModal
-        visible={helpModalVisible}
-        onClose={() => setHelpModalVisible(false)}
-      />
+        <HelpModal
+          visible={helpModalVisible}
+          onClose={() => setHelpModalVisible(false)}
+        />
 
-      <SettingsModal
-        visible={settingsModalVisible}
-        onClose={() => setSettingsModalVisible(false)}
-        onApplySettings={handleCustomSettings}
-        currentSettings={{
-          boardSize: getCurrentBoardSize(),
-          minePercentage: getCurrentMinePercentage(),
+        <SettingsModal
+          visible={settingsModalVisible}
+          onClose={() => setSettingsModalVisible(false)}
+          onApplySettings={handleCustomSettings}
+          currentSettings={{
+            boardSize: getCurrentBoardSize(),
+            minePercentage: getCurrentMinePercentage(),
+            vibrationEnabled: settings.vibrationEnabled,
+          }}
+        />
+      </Animated.View>
+
+      <Animated.View 
+        style={{
+          position: 'absolute',
+          width: Dimensions.get('window').width,
+          height: Dimensions.get('window').height,
+          backgroundColor: 'red',
+          opacity: flashOpacity,
+          zIndex: 9999,
+          elevation: 9999,
+          top: 0,
+          left: 0,
+          pointerEvents: 'none',
         }}
       />
-    </View>
+    </>
   );
 };
 

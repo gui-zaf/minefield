@@ -1,12 +1,21 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { SafeAreaView, View, StyleSheet } from 'react-native';
 import Minefield from './components/Minefield';
 
 const App: React.FC = () => {
+  const [settings, setSettings] = useState({
+    boardSize: 5,
+    minePercentage: 0.12,
+    vibrationEnabled: true,
+  });
+
   return (
     <View style={styles.background}>
       <SafeAreaView style={styles.container}>
-        <Minefield />
+        <Minefield 
+          settings={settings} 
+          onSettingsChange={setSettings}
+        />
       </SafeAreaView>
     </View>
   );
