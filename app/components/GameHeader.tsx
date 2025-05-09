@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Vibration } from 'react-native';
 import DigitalDisplay from './DigitalDisplay';
 
@@ -20,35 +20,22 @@ const GameHeader: React.FC<GameHeaderProps> = ({
   onDevModeActivate,
 }) => {
   let pressTimer: NodeJS.Timeout | null = null;
-  const [isLongPressing, setIsLongPressing] = useState(false);
-  const [canActivate, setCanActivate] = useState(false);
 
   const startPressTimer = useCallback(() => {
-    setIsLongPressing(true);
-    setCanActivate(false);
     pressTimer = setTimeout(() => {
-      // Vibração forte para indicar que pode soltar
+      onDevModeActivate();
       Vibration.vibrate([0, 300]);
-      setCanActivate(true);
     }, 5000);
-  }, []);
+  }, [onDevModeActivate]);
 
   const clearPressTimer = useCallback(() => {
     if (pressTimer) {
       clearTimeout(pressTimer);
       pressTimer = null;
     }
-    if (canActivate) {
-      onDevModeActivate();
-    }
-    setIsLongPressing(false);
-    setCanActivate(false);
-  }, [canActivate, onDevModeActivate]);
+  }, []);
 
   const getFaceEmoji = () => {
-    if (canActivate) {
-      return '✨';
-    }
     if (isDevMode) {
       return '🐛';
     }
@@ -68,10 +55,7 @@ const GameHeader: React.FC<GameHeaderProps> = ({
     <View style={styles.container}>
       <DigitalDisplay value={remainingMines} />
       <TouchableOpacity
-        style={[
-          styles.faceButton,
-          canActivate && styles.readyToActivate
-        ]}
+        style={styles.faceButton}
         onPress={onReset}
         onPressIn={startPressTimer}
         onPressOut={clearPressTimer}
@@ -109,13 +93,6 @@ const styles = StyleSheet.create({
     borderRightColor: '#808080',
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  readyToActivate: {
-    backgroundColor: '#e0e0e0',
-    borderTopColor: '#808080',
-    borderLeftColor: '#808080',
-    borderBottomColor: '#fff',
-    borderRightColor: '#fff',
   },
   faceEmoji: {
     fontSize: 24,
