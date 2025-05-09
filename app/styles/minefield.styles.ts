@@ -26,6 +26,7 @@ interface MinefieldStyles {
   number8: TextStyle;
   boardContainer: ViewStyle;
   boardContentContainer: ViewStyle;
+  devModeMine: TextStyle;
 }
 
 const HEADER_HEIGHT = 140; // Altura fixa do header
@@ -188,5 +189,13 @@ export const styles = StyleSheet.create<MinefieldStyles>({
     alignItems: 'center',
     minHeight: windowHeight - HEADER_HEIGHT,
     paddingVertical: 20,
+  },
+  devModeMine: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#ff0000',
+    textShadowColor: '#ff0000',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 5,
   },
 }); 

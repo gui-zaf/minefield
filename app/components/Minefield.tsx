@@ -59,6 +59,7 @@ const Minefield: React.FC<MinefieldProps> = ({ settings, onSettingsChange }) => 
   });
   const [flagCount, setFlagCount] = useState(0);
   const [totalMines, setTotalMines] = useState(0);
+  const [isDevMode, setIsDevMode] = useState(false);
 
   const getCurrentBoardSize = () => {
     return difficulty === 'custom' ? customSettings.boardSize : BOARD_SIZES[difficulty];
@@ -244,7 +245,7 @@ const Minefield: React.FC<MinefieldProps> = ({ settings, onSettingsChange }) => 
     const newBoard = [...board];
     newBoard[row][col].isRevealed = true;
 
-    if (board[row][col].isMine) {
+    if (board[row][col].isMine && !isDevMode) {
       for (let i = 0; i < board.length; i++) {
         for (let j = 0; j < board[i].length; j++) {
           if (board[i][j].isMine) {
@@ -400,6 +401,8 @@ const Minefield: React.FC<MinefieldProps> = ({ settings, onSettingsChange }) => 
             gameTime={gameTime}
             gameStatus={gameStatus}
             onReset={() => startNewGame(difficulty)}
+            isDevMode={isDevMode}
+            onDevModeActivate={() => setIsDevMode(prev => !prev)}
           />
         </View>
 
@@ -415,33 +418,42 @@ const Minefield: React.FC<MinefieldProps> = ({ settings, onSettingsChange }) => 
           <View style={styles.board}>
             {board.map((row, rowIndex) => (
               <View key={rowIndex} style={styles.row}>
-                {row.map((_, colIndex) => (
-                  <TouchableOpacity
-                    key={`${rowIndex}-${colIndex}`}
-                    style={board[rowIndex][colIndex].isRevealed ? styles.revealedCell : styles.cell}
-                    onPress={() => revealCell(rowIndex, colIndex)}
-                    onLongPress={() => toggleFlag(rowIndex, colIndex)}
-                    onPressIn={handleCellPressIn}
-                    onPressOut={handleCellPressOut}
-                  >
-                    <Text style={[
-                      styles.cellText,
-                      board[rowIndex][colIndex].isRevealed && 
-                      !board[rowIndex][colIndex].isMine && 
-                      getNumberStyle(board[rowIndex][colIndex].adjacentMines)
-                    ]}>
-                      {board[rowIndex][colIndex].isRevealed
-                        ? board[rowIndex][colIndex].isMine
+                {row.map((cell, colIndex) => {
+                  const isRevealed = cell.isRevealed;
+                  const isMine = cell.isMine;
+                  const cellStyle = isRevealed ? styles.revealedCell : styles.cell;
+                  
+                  const textStyle = [
+                    styles.cellText,
+                    isRevealed && !isMine && getNumberStyle(cell.adjacentMines),
+                    isMine && isDevMode && styles.devModeMine
+                  ];
+
+                  return (
+                    <TouchableOpacity
+                      key={`${rowIndex}-${colIndex}`}
+                      style={cellStyle}
+                      onPress={() => revealCell(rowIndex, colIndex)}
+                      onLongPress={() => toggleFlag(rowIndex, colIndex)}
+                      onPressIn={handleCellPressIn}
+                      onPressOut={handleCellPressOut}
+                    >
+                      <Text style={textStyle}>
+                        {isRevealed
+                          ? isMine
+                            ? '💣'
+                            : cell.adjacentMines > 0
+                            ? cell.adjacentMines.toString()
+                            : ''
+                          : cell.isFlagged
+                          ? '🚩'
+                          : isDevMode && isMine
                           ? '💣'
-                          : board[rowIndex][colIndex].adjacentMines > 0
-                          ? board[rowIndex][colIndex].adjacentMines.toString()
-                          : ''
-                        : board[rowIndex][colIndex].isFlagged
-                        ? '🚩'
-                        : ''}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
+                          : ''}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
               </View>
             ))}
           </View>
