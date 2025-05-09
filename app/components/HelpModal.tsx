@@ -16,59 +16,70 @@ const HelpModal: React.FC<HelpModalProps> = ({ visible, onClose }) => {
       <View style={styles.centeredView}>
         <View style={styles.modalView}>
           <View style={styles.titleBar}>
-            <Text style={styles.titleText}>Campo Minado - Ajuda</Text>
+            <Text style={styles.titleText}>Como Jogar</Text>
             <TouchableOpacity style={styles.closeButton} onPress={onClose}>
               <Text style={styles.closeButtonText}>×</Text>
             </TouchableOpacity>
           </View>
-          
-          <ScrollView style={styles.scrollView}>
-            <Text style={styles.sectionTitle}>Bem-vindo ao Campo Minado!</Text>
-            <Text style={styles.text}>
-              O objetivo é revelar todas as células sem minas. Vamos aprender como jogar!
-            </Text>
 
-            <Text style={styles.sectionTitle}>Revelando Células</Text>
-            <Text style={styles.text}>
-              Toque em uma célula para revelá-la. Se houver um número, ele indica quantas minas estão ao redor.
-            </Text>
-
-            <Text style={styles.sectionTitle}>Números e Cores</Text>
-            <View style={styles.numberGrid}>
-              <Text style={[styles.text, styles.number1]}>1</Text>
-              <Text style={styles.text}>- uma mina próxima</Text>
-              <Text style={[styles.text, styles.number2]}>2</Text>
-              <Text style={styles.text}>- duas minas próximas</Text>
-              <Text style={[styles.text, styles.number3]}>3</Text>
-              <Text style={styles.text}>- três minas próximas</Text>
-              <Text style={styles.text}>n - n minas próximas</Text>
+          <ScrollView style={styles.content}>
+            {/* Objetivo do Jogo */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Objetivo</Text>
+              <Text style={styles.text}>
+                Encontre todas as células seguras do tabuleiro sem clicar em nenhuma mina. Use a lógica e os números como guia para determinar onde as minas estão escondidas.
+              </Text>
             </View>
 
-            <Text style={styles.sectionTitle}>Marcando Minas</Text>
-            <Text style={styles.text}>
-              Pressione e segure uma célula para marcar onde você acha que há uma mina com uma bandeira 🚩
-            </Text>
+            {/* Controles */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Controles</Text>
+              <Text style={styles.text}>• Toque simples: Revela uma célula</Text>
+              <Text style={styles.text}>• Toque longo: Coloca/remove uma bandeira 🚩</Text>
+              <Text style={styles.text}>• Arraste vertical: Ajusta a posição do tabuleiro na tela</Text>
+            </View>
 
-            <Text style={styles.sectionTitle}>Células Vazias</Text>
-            <Text style={styles.text}>
-              Quando você revelar uma célula vazia, todas as células vazias adjacentes também serão reveladas automaticamente.
-            </Text>
+            {/* Números e Significados */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Números e Significados</Text>
+              <Text style={styles.text}>Cada número indica quantas minas estão nas células adjacentes (incluindo diagonais):</Text>
+              <Text style={styles.numberText}>1 - uma mina próxima, 2 - duas minas próximas, 3 - três minas próximas, 4 - quatro minas próximas, 5 - cinco minas próximas, 6 - seis minas próximas, 7 - sete minas próximas, 8 - oito minas próximas</Text>
+            </View>
 
-            <Text style={styles.sectionTitle}>Dicas</Text>
-            <Text style={styles.text}>
-              • Use as bandeiras para marcar onde você acha que tem minas{'\n'}
-              • Os números mostram quantas minas existem ao redor da célula{'\n'}
-              • Células vazias não têm minas ao redor{'\n'}
-              • O contador da esquerda mostra as minas restantes{'\n'}
-              • O contador da direita mostra o tempo de jogo
-            </Text>
+            {/* Cabeçalho do Jogo */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Cabeçalho do Jogo</Text>
+              <Text style={styles.text}>• Display esquerdo: Número de minas restantes</Text>
+              <Text style={styles.text}>• Display central: Botão de reiniciar jogo</Text>
+              <Text style={styles.text}>• Display direito: Tempo decorrido</Text>
+            </View>
 
-            <Text style={styles.sectionTitle}>Níveis</Text>
-            <Text style={styles.text}>
-              • Fácil: Grade 5x5{'\n'}
-              • Médio: Grade 6x6{'\n'}
-              • Difícil: Grade 8x8
-            </Text>
+            {/* Configurações */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Configurações ⚙️</Text>
+              <Text style={styles.text}>No menu de configurações você pode:</Text>
+              <Text style={styles.text}>• Escolher dificuldades predefinidas (Fácil, Médio, Difícil)</Text>
+              <Text style={styles.text}>• Personalizar o tamanho do tabuleiro (5x5 até 10x10)</Text>
+              <Text style={styles.text}>• Ajustar a porcentagem de minas (10% a 30%)</Text>
+              <Text style={styles.text}>• Ativar/desativar vibração ao marcar bandeiras</Text>
+            </View>
+
+            {/* Como Ganhar */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Como Ganhar</Text>
+              <Text style={styles.text}>
+                Você vence quando revelar todas as células seguras do tabuleiro. Não é necessário marcar todas as minas com bandeiras, apenas evite clicar nelas!
+              </Text>
+            </View>
+
+            {/* Dicas */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Dicas</Text>
+              <Text style={styles.text}>• Use as bandeiras para marcar onde você tem certeza que há minas</Text>
+              <Text style={styles.text}>• O primeiro clique nunca será uma mina</Text>
+              <Text style={styles.text}>• Use o contador de minas restantes como guia</Text>
+              <Text style={styles.text}>• Células sem número ao redor são sempre seguras</Text>
+            </View>
           </ScrollView>
         </View>
       </View>
@@ -82,6 +93,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    padding: 20,
   },
   modalView: {
     backgroundColor: '#c0c0c0',
@@ -90,8 +102,8 @@ const styles = StyleSheet.create({
     borderLeftColor: '#fff',
     borderBottomColor: '#808080',
     borderRightColor: '#808080',
+    width: '100%',
     maxHeight: '80%',
-    width: '90%',
   },
   titleBar: {
     flexDirection: 'row',
@@ -122,48 +134,29 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     lineHeight: 20,
   },
-  scrollView: {
+  content: {
     padding: 15,
+  },
+  section: {
+    marginBottom: 20,
   },
   sectionTitle: {
     fontSize: 16,
     fontWeight: 'bold',
-    marginTop: 15,
+    color: '#000080',
     marginBottom: 8,
-    color: '#000',
   },
   text: {
     fontSize: 14,
-    lineHeight: 20,
     color: '#000',
-    marginBottom: 10,
+    marginBottom: 4,
+    lineHeight: 20,
   },
-  numberGrid: {
-    marginVertical: 10,
-  },
-  number1: {
-    color: '#0000ff', // Blue
-  },
-  number2: {
-    color: '#008000', // Green
-  },
-  number3: {
-    color: '#ff0000', // Red
-  },
-  number4: {
-    color: '#000080', // Navy Blue
-  },
-  number5: {
-    color: '#800000', // Maroon
-  },
-  number6: {
-    color: '#008080', // Teal
-  },
-  number7: {
-    color: '#000000', // Black
-  },
-  number8: {
-    color: '#808080', // Gray
+  numberText: {
+    fontSize: 14,
+    color: '#000',
+    marginTop: 4,
+    lineHeight: 20,
   },
 });
 
