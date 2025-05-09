@@ -1,0 +1,290 @@
+import React, { useState, useEffect } from 'react';
+import { Modal, View, Text, TouchableOpacity, StyleSheet, TextInput, Keyboard, TouchableWithoutFeedback } from 'react-native';
+
+interface SettingsModalProps {
+  visible: boolean;
+  onClose: () => void;
+  onApplySettings: (settings: GameSettings) => void;
+  currentSettings: {
+    boardSize: number;
+    minePercentage: number;
+  };
+}
+
+export interface GameSettings {
+  boardSize: number;
+  minePercentage: number;
+}
+
+const PRESET_DIFFICULTIES = {
+  easy: { size: 5, percentage: 12 },
+  medium: { size: 6, percentage: 15 },
+  hard: { size: 8, percentage: 18 },
+} as const;
+
+type Difficulty = keyof typeof PRESET_DIFFICULTIES | 'custom';
+
+const SettingsModal: React.FC<SettingsModalProps> = ({
+  visible,
+  onClose,
+  onApplySettings,
+  currentSettings,
+}) => {
+  const [boardSize, setBoardSize] = useState(currentSettings.boardSize.toString());
+  const [minePercentage, setMinePercentage] = useState((currentSettings.minePercentage * 100).toString());
+  const [selectedDifficulty, setSelectedDifficulty] = useState<Difficulty>('custom');
+
+  useEffect(() => {
+    // Determine initial difficulty based on current settings
+    const currentConfig = {
+      size: currentSettings.boardSize,
+      percentage: Math.round(currentSettings.minePercentage * 100),
+    };
+
+    const matchingDifficulty = (Object.entries(PRESET_DIFFICULTIES) as [Difficulty, typeof PRESET_DIFFICULTIES.easy][])
+      .find(([_, config]) => config.size === currentConfig.size && config.percentage === currentConfig.percentage);
+
+    setSelectedDifficulty(matchingDifficulty?.[0] ?? 'custom');
+    setBoardSize(currentSettings.boardSize.toString());
+    setMinePercentage((currentSettings.minePercentage * 100).toString());
+  }, [currentSettings]);
+
+  const handleApply = () => {
+    Keyboard.dismiss();
+    const size = Math.min(10, Math.max(5, parseInt(boardSize) || 5));
+    const percentage = Math.min(30, Math.max(10, parseInt(minePercentage) || 15)) / 100;
+
+    onApplySettings({
+      boardSize: size,
+      minePercentage: percentage,
+    });
+    onClose();
+  };
+
+  const setPresetDifficulty = (difficulty: Difficulty) => {
+    Keyboard.dismiss();
+    if (difficulty === 'custom') return;
+
+    const config = PRESET_DIFFICULTIES[difficulty];
+    setBoardSize(config.size.toString());
+    setMinePercentage(config.percentage.toString());
+    setSelectedDifficulty(difficulty);
+  };
+
+  const handleCustomInput = (value: string, isSize: boolean) => {
+    setSelectedDifficulty('custom');
+    if (isSize) {
+      setBoardSize(value);
+    } else {
+      setMinePercentage(value);
+    }
+  };
+
+  const handleClose = () => {
+    Keyboard.dismiss();
+    onClose();
+  };
+
+  return (
+    <Modal
+      animationType="none"
+      transparent={true}
+      visible={visible}
+    >
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <View style={styles.centeredView}>
+          <TouchableWithoutFeedback>
+            <View style={styles.modalView}>
+              <View style={styles.titleBar}>
+                <Text style={styles.titleText}>Configurações</Text>
+                <TouchableOpacity style={styles.closeButton} onPress={handleClose}>
+                  <Text style={styles.closeButtonText}>×</Text>
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.content}>
+                <Text style={styles.sectionTitle}>Dificuldades Predefinidas</Text>
+                <View style={styles.presetButtons}>
+                  <TouchableOpacity
+                    style={[styles.presetButton, selectedDifficulty === 'easy' && styles.selectedPreset]}
+                    onPress={() => setPresetDifficulty('easy')}
+                  >
+                    <Text>Fácil</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.presetButton, selectedDifficulty === 'medium' && styles.selectedPreset]}
+                    onPress={() => setPresetDifficulty('medium')}
+                  >
+                    <Text>Médio</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.presetButton, selectedDifficulty === 'hard' && styles.selectedPreset]}
+                    onPress={() => setPresetDifficulty('hard')}
+                  >
+                    <Text>Difícil</Text>
+                  </TouchableOpacity>
+                </View>
+
+                <Text style={styles.sectionTitle}>Jogo Personalizado</Text>
+                
+                <View style={styles.inputContainer}>
+                  <Text style={styles.label}>Tamanho do Tabuleiro:</Text>
+                  <TextInput
+                    style={[styles.input, selectedDifficulty === 'custom' && styles.selectedInput]}
+                    value={boardSize}
+                    onChangeText={(value) => handleCustomInput(value, true)}
+                    keyboardType="number-pad"
+                    placeholder="5-10"
+                    returnKeyType="done"
+                    onSubmitEditing={Keyboard.dismiss}
+                  />
+                  <Text style={styles.hint}>Mínimo: 5, Máximo: 10</Text>
+                </View>
+
+                <View style={styles.inputContainer}>
+                  <Text style={styles.label}>Porcentagem de Minas (%):</Text>
+                  <TextInput
+                    style={[styles.input, selectedDifficulty === 'custom' && styles.selectedInput]}
+                    value={minePercentage}
+                    onChangeText={(value) => handleCustomInput(value, false)}
+                    keyboardType="number-pad"
+                    placeholder="10-30"
+                    returnKeyType="done"
+                    onSubmitEditing={Keyboard.dismiss}
+                  />
+                  <Text style={styles.hint}>Mínimo: 10%, Máximo: 30%</Text>
+                </View>
+
+                <TouchableOpacity
+                  style={styles.applyButton}
+                  onPress={handleApply}
+                >
+                  <Text>Aplicar</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </TouchableWithoutFeedback>
+        </View>
+      </TouchableWithoutFeedback>
+    </Modal>
+  );
+};
+
+const styles = StyleSheet.create({
+  centeredView: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalView: {
+    backgroundColor: '#c0c0c0',
+    borderWidth: 2,
+    borderTopColor: '#fff',
+    borderLeftColor: '#fff',
+    borderBottomColor: '#808080',
+    borderRightColor: '#808080',
+    width: '90%',
+  },
+  titleBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#000080',
+    padding: 8,
+  },
+  titleText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  closeButton: {
+    width: 24,
+    height: 24,
+    backgroundColor: '#c0c0c0',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderTopColor: '#fff',
+    borderLeftColor: '#fff',
+    borderBottomColor: '#808080',
+    borderRightColor: '#808080',
+  },
+  closeButtonText: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    lineHeight: 20,
+  },
+  content: {
+    padding: 15,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginTop: 10,
+    marginBottom: 8,
+    color: '#000',
+  },
+  presetButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 15,
+  },
+  presetButton: {
+    padding: 10,
+    backgroundColor: '#c0c0c0',
+    borderWidth: 2,
+    borderTopColor: '#fff',
+    borderLeftColor: '#fff',
+    borderBottomColor: '#808080',
+    borderRightColor: '#808080',
+    minWidth: 80,
+    alignItems: 'center',
+  },
+  selectedPreset: {
+    backgroundColor: '#a0a0a0',
+    borderTopColor: '#808080',
+    borderLeftColor: '#808080',
+    borderBottomColor: '#fff',
+    borderRightColor: '#fff',
+  },
+  inputContainer: {
+    marginBottom: 15,
+  },
+  label: {
+    fontSize: 14,
+    marginBottom: 5,
+    color: '#000',
+  },
+  input: {
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#808080',
+    padding: 8,
+    fontSize: 14,
+  },
+  selectedInput: {
+    borderWidth: 2,
+    borderColor: '#000080',
+  },
+  hint: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 2,
+  },
+  applyButton: {
+    alignSelf: 'center',
+    padding: 10,
+    backgroundColor: '#c0c0c0',
+    borderWidth: 2,
+    borderTopColor: '#fff',
+    borderLeftColor: '#fff',
+    borderBottomColor: '#808080',
+    borderRightColor: '#808080',
+    minWidth: 100,
+    alignItems: 'center',
+    marginTop: 10,
+  },
+});
+
+export default SettingsModal; 

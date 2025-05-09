@@ -1,0 +1,381 @@
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, Text, TouchableOpacity } from 'react-native';
+import { styles } from '../styles/minefield.styles';
+import GameModal from './GameModal';
+import HelpModal from './HelpModal';
+import GameHeader from './GameHeader';
+import SettingsModal, { GameSettings } from './SettingsModal';
+
+export type Difficulty = 'easy' | 'medium' | 'hard' | 'custom';
+export type GameStatus = 'ready' | 'playing' | 'clicking' | 'won' | 'lost';
+
+export type CellState = {
+  isMine: boolean;
+  isRevealed: boolean;
+  isFlagged: boolean;
+  adjacentMines: number;
+};
+
+export type GameBoard = CellState[][];
+
+const BOARD_SIZES = {
+  easy: 5,
+  medium: 6,
+  hard: 8,
+};
+
+const MINE_PERCENTAGES = {
+  easy: 0.12, // 12% of cells will be mines
+  medium: 0.15, // 15% of cells will be mines
+  hard: 0.18, // 18% of cells will be mines
+};
+
+const Minefield: React.FC = () => {
+  const [difficulty, setDifficulty] = useState<Difficulty>('easy');
+  const [board, setBoard] = useState<GameBoard>([]);
+  const [gameStatus, setGameStatus] = useState<GameStatus>('ready');
+  const [modalVisible, setModalVisible] = useState(false);
+  const [helpModalVisible, setHelpModalVisible] = useState(false);
+  const [settingsModalVisible, setSettingsModalVisible] = useState(false);
+  const [gameTime, setGameTime] = useState(0);
+  const [timerInterval, setTimerInterval] = useState<NodeJS.Timeout | null>(null);
+  const [flaggedMines, setFlaggedMines] = useState(0);
+  const [isFirstClick, setIsFirstClick] = useState(true);
+  const [customSettings, setCustomSettings] = useState<GameSettings>({
+    boardSize: 5,
+    minePercentage: 0.12,
+  });
+
+  const getCurrentBoardSize = () => {
+    return difficulty === 'custom' ? customSettings.boardSize : BOARD_SIZES[difficulty];
+  };
+
+  const getCurrentMinePercentage = () => {
+    return difficulty === 'custom' ? customSettings.minePercentage : MINE_PERCENTAGES[difficulty];
+  };
+
+  const handleCustomSettings = (settings: GameSettings) => {
+    setCustomSettings(settings);
+    setDifficulty('custom');
+    startNewGame('custom', settings);
+  };
+
+  const startTimer = useCallback(() => {
+    if (timerInterval) return;
+    
+    const interval = setInterval(() => {
+      setGameTime(prev => {
+        if (prev >= 999) {
+          clearInterval(interval);
+          return 999;
+        }
+        return prev + 1;
+      });
+    }, 1000);
+
+    setTimerInterval(interval);
+  }, [timerInterval]);
+
+  const stopTimer = useCallback(() => {
+    if (timerInterval) {
+      clearInterval(timerInterval);
+      setTimerInterval(null);
+    }
+  }, [timerInterval]);
+
+  const startNewGame = (newDifficulty: Difficulty, settings?: GameSettings) => {
+    stopTimer();
+    setDifficulty(newDifficulty);
+    setGameStatus('ready');
+    setModalVisible(false);
+    setGameTime(0);
+    setFlaggedMines(0);
+    setIsFirstClick(true);
+    
+    if (settings) {
+      setCustomSettings(settings);
+    }
+    
+    const boardSize = newDifficulty === 'custom' ? 
+      (settings ? settings.boardSize : customSettings.boardSize) : 
+      BOARD_SIZES[newDifficulty];
+      
+    const minePercentage = newDifficulty === 'custom' ? 
+      (settings ? settings.minePercentage : customSettings.minePercentage) : 
+      MINE_PERCENTAGES[newDifficulty];
+
+    setBoard(initializeBoard(boardSize, minePercentage));
+  };
+
+  const initializeBoard = (size: number, minePercentage: number) => {
+    const totalMines = Math.floor(size * size * minePercentage);
+    
+    const newBoard: GameBoard = Array(size).fill(null).map(() =>
+      Array(size).fill(null).map(() => ({
+        isMine: false,
+        isRevealed: false,
+        isFlagged: false,
+        adjacentMines: 0,
+      }))
+    );
+
+    let minesPlaced = 0;
+    while (minesPlaced < totalMines) {
+      const row = Math.floor(Math.random() * size);
+      const col = Math.floor(Math.random() * size);
+      
+      if (!newBoard[row][col].isMine) {
+        newBoard[row][col].isMine = true;
+        minesPlaced++;
+      }
+    }
+
+    for (let row = 0; row < size; row++) {
+      for (let col = 0; col < size; col++) {
+        if (!newBoard[row][col].isMine) {
+          newBoard[row][col].adjacentMines = countAdjacentMines(newBoard, row, col);
+        }
+      }
+    }
+
+    return newBoard;
+  };
+
+  const countAdjacentMines = (board: GameBoard, row: number, col: number): number => {
+    let count = 0;
+    const size = board.length;
+
+    for (let i = -1; i <= 1; i++) {
+      for (let j = -1; j <= 1; j++) {
+        const newRow = row + i;
+        const newCol = col + j;
+        
+        if (
+          newRow >= 0 && 
+          newRow < size && 
+          newCol >= 0 && 
+          newCol < size && 
+          board[newRow][newCol].isMine
+        ) {
+          count++;
+        }
+      }
+    }
+
+    return count;
+  };
+
+  const revealCell = (row: number, col: number) => {
+    if (gameStatus === 'won' || gameStatus === 'lost' || board[row][col].isFlagged || board[row][col].isRevealed) {
+      return;
+    }
+
+    if (isFirstClick) {
+      setIsFirstClick(false);
+      startTimer();
+      setGameStatus('playing');
+    }
+
+    const newBoard = [...board];
+    newBoard[row][col].isRevealed = true;
+
+    if (board[row][col].isMine) {
+      for (let i = 0; i < board.length; i++) {
+        for (let j = 0; j < board[i].length; j++) {
+          if (board[i][j].isMine) {
+            newBoard[i][j].isRevealed = true;
+          }
+        }
+      }
+      setGameStatus('lost');
+      stopTimer();
+      setBoard(newBoard);
+      return;
+    }
+
+    if (board[row][col].adjacentMines === 0) {
+      revealAdjacentCells(newBoard, row, col);
+    }
+
+    setBoard(newBoard);
+    checkWinCondition(newBoard);
+  };
+
+  const revealAdjacentCells = (board: GameBoard, row: number, col: number) => {
+    const size = board.length;
+
+    for (let i = -1; i <= 1; i++) {
+      for (let j = -1; j <= 1; j++) {
+        const newRow = row + i;
+        const newCol = col + j;
+
+        if (
+          newRow >= 0 &&
+          newRow < size &&
+          newCol >= 0 &&
+          newCol < size &&
+          !board[newRow][newCol].isRevealed &&
+          !board[newRow][newCol].isFlagged &&
+          !board[newRow][newCol].isMine
+        ) {
+          board[newRow][newCol].isRevealed = true;
+          if (board[newRow][newCol].adjacentMines === 0) {
+            revealAdjacentCells(board, newRow, newCol);
+          }
+        }
+      }
+    }
+  };
+
+  const toggleFlag = (row: number, col: number) => {
+    if (gameStatus === 'won' || gameStatus === 'lost' || board[row][col].isRevealed) {
+      return;
+    }
+
+    if (isFirstClick) {
+      setIsFirstClick(false);
+      startTimer();
+      setGameStatus('playing');
+    }
+
+    const newBoard = [...board];
+    newBoard[row][col].isFlagged = !newBoard[row][col].isFlagged;
+    setBoard(newBoard);
+    
+    setFlaggedMines(prev => prev + (newBoard[row][col].isFlagged ? 1 : -1));
+  };
+
+  const checkWinCondition = (currentBoard: GameBoard) => {
+    const size = currentBoard.length;
+    let allNonMinesRevealed = true;
+
+    for (let row = 0; row < size; row++) {
+      for (let col = 0; col < size; col++) {
+        if (!currentBoard[row][col].isMine && !currentBoard[row][col].isRevealed) {
+          allNonMinesRevealed = false;
+          break;
+        }
+      }
+    }
+
+    if (allNonMinesRevealed) {
+      setGameStatus('won');
+      stopTimer();
+      setModalVisible(true);
+    }
+  };
+
+  useEffect(() => {
+    startNewGame('easy');
+    return () => stopTimer();
+  }, []);
+
+  const handleCellPressIn = () => {
+    if (gameStatus === 'playing') {
+      setGameStatus('clicking');
+    }
+  };
+
+  const handleCellPressOut = () => {
+    if (gameStatus === 'clicking') {
+      setGameStatus('playing');
+    }
+  };
+
+  const getNumberStyle = (number: number) => {
+    switch (number) {
+      case 1: return styles.number1;
+      case 2: return styles.number2;
+      case 3: return styles.number3;
+      case 4: return styles.number4;
+      case 5: return styles.number5;
+      case 6: return styles.number6;
+      case 7: return styles.number7;
+      case 8: return styles.number8;
+      default: return {};
+    }
+  };
+
+  return (
+    <View style={styles.container}>
+      <View style={styles.header}>
+        <TouchableOpacity
+          style={styles.helpButton}
+          onPress={() => setHelpModalVisible(true)}
+        >
+          <Text style={styles.helpButtonText}>?</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.settingsButton}
+          onPress={() => setSettingsModalVisible(true)}
+        >
+          <Text style={styles.settingsButtonText}>⚙️</Text>
+        </TouchableOpacity>
+      </View>
+
+      <GameHeader
+        remainingMines={Math.floor(getCurrentBoardSize() * getCurrentBoardSize() * getCurrentMinePercentage()) - flaggedMines}
+        gameTime={gameTime}
+        gameStatus={gameStatus}
+        onReset={() => startNewGame(difficulty)}
+      />
+
+      <View style={styles.board}>
+        {board.map((row, rowIndex) => (
+          <View key={rowIndex} style={styles.row}>
+            {row.map((_, colIndex) => (
+              <TouchableOpacity
+                key={`${rowIndex}-${colIndex}`}
+                style={board[rowIndex][colIndex].isRevealed ? styles.revealedCell : styles.cell}
+                onPress={() => revealCell(rowIndex, colIndex)}
+                onLongPress={() => toggleFlag(rowIndex, colIndex)}
+                onPressIn={handleCellPressIn}
+                onPressOut={handleCellPressOut}
+              >
+                <Text style={[
+                  styles.cellText,
+                  board[rowIndex][colIndex].isRevealed && 
+                  !board[rowIndex][colIndex].isMine && 
+                  getNumberStyle(board[rowIndex][colIndex].adjacentMines)
+                ]}>
+                  {board[rowIndex][colIndex].isRevealed
+                    ? board[rowIndex][colIndex].isMine
+                      ? '💣'
+                      : board[rowIndex][colIndex].adjacentMines > 0
+                      ? board[rowIndex][colIndex].adjacentMines.toString()
+                      : ''
+                    : board[rowIndex][colIndex].isFlagged
+                    ? '🚩'
+                    : ''}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        ))}
+      </View>
+
+      <GameModal
+        visible={modalVisible}
+        isVictory={gameStatus === 'won'}
+        onRestart={() => startNewGame(difficulty)}
+      />
+
+      <HelpModal
+        visible={helpModalVisible}
+        onClose={() => setHelpModalVisible(false)}
+      />
+
+      <SettingsModal
+        visible={settingsModalVisible}
+        onClose={() => setSettingsModalVisible(false)}
+        onApplySettings={handleCustomSettings}
+        currentSettings={{
+          boardSize: getCurrentBoardSize(),
+          minePercentage: getCurrentMinePercentage(),
+        }}
+      />
+    </View>
+  );
+};
+
+export default Minefield; 
