@@ -53,14 +53,69 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
     setVibrationEnabled(currentSettings.vibrationEnabled);
   }, [currentSettings]);
 
+  const validateAndSetBoardSize = (value: string) => {
+    // Remove qualquer caractere não numérico
+    const numericValue = value.replace(/[^0-9]/g, '');
+    
+    // Limita a 2 dígitos
+    if (numericValue.length > 2) return;
+    
+    // Converte para número para validação
+    const size = parseInt(numericValue);
+    
+    // Se for um número válido, garante que esteja entre 5 e 10
+    if (!isNaN(size)) {
+      if (size < 5) {
+        setBoardSize('5');
+      } else if (size > 10) {
+        setBoardSize('10');
+      } else {
+        setBoardSize(numericValue);
+      }
+    } else {
+      // Se não for um número válido e o campo não estiver vazio, mantém o valor anterior
+      if (numericValue !== '') {
+        setBoardSize(boardSize);
+      } else {
+        setBoardSize('');
+      }
+    }
+    setSelectedDifficulty('custom');
+  };
+
+  const validateAndSetMinePercentage = (value: string) => {
+    // Remove qualquer caractere não numérico
+    const numericValue = value.replace(/[^0-9]/g, '');
+    
+    // Limita a 2 dígitos
+    if (numericValue.length > 2) return;
+
+    // Permite digitar o número livremente
+    setMinePercentage(numericValue);
+    
+    // Só valida os limites quando o usuário terminar de digitar (2 dígitos ou campo vazio)
+    if (numericValue.length === 2 || numericValue === '') {
+      const percentage = parseInt(numericValue);
+      if (!isNaN(percentage)) {
+        if (percentage < 10) {
+          setMinePercentage('10');
+        } else if (percentage > 30) {
+          setMinePercentage('30');
+        }
+      }
+    }
+    
+    setSelectedDifficulty('custom');
+  };
+
   const handleApply = () => {
-    Keyboard.dismiss();
-    const size = Math.min(10, Math.max(5, parseInt(boardSize) || 5));
-    const percentage = Math.min(30, Math.max(10, parseInt(minePercentage) || 15)) / 100;
+    // Validação final antes de aplicar as configurações
+    const finalBoardSize = Math.min(10, Math.max(5, parseInt(boardSize) || 5));
+    const finalPercentage = Math.min(30, Math.max(10, parseInt(minePercentage) || 15)) / 100;
 
     onApplySettings({
-      boardSize: size,
-      minePercentage: percentage,
+      boardSize: finalBoardSize,
+      minePercentage: finalPercentage,
       vibrationEnabled,
     });
     onClose();
@@ -138,9 +193,9 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                     <TextInput
                       style={[styles.input, selectedDifficulty === 'custom' && styles.selectedInput, styles.percentageInput]}
                       value={boardSize}
-                      onChangeText={(value) => handleCustomInput(value, true)}
+                      onChangeText={validateAndSetBoardSize}
                       keyboardType="number-pad"
-                      placeholder="5-10"
+                      maxLength={2}
                       returnKeyType="done"
                       onSubmitEditing={Keyboard.dismiss}
                     />
@@ -157,9 +212,9 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                     <TextInput
                       style={[styles.input, selectedDifficulty === 'custom' && styles.selectedInput, styles.percentageInput]}
                       value={minePercentage}
-                      onChangeText={(value) => handleCustomInput(value, false)}
+                      onChangeText={validateAndSetMinePercentage}
                       keyboardType="number-pad"
-                      placeholder="10-30"
+                      maxLength={2}
                       returnKeyType="done"
                       onSubmitEditing={Keyboard.dismiss}
                     />
