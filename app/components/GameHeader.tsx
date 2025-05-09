@@ -25,6 +25,10 @@ const GameHeader: React.FC<GameHeaderProps> = ({
     pressTimer = setTimeout(() => {
       onDevModeActivate();
       Vibration.vibrate([0, 300]);
+      if (pressTimer) {
+        clearTimeout(pressTimer);
+        pressTimer = null;
+      }
     }, 5000);
   }, [onDevModeActivate]);
 
