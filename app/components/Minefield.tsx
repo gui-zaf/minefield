@@ -421,12 +421,14 @@ const Minefield: React.FC<MinefieldProps> = ({ settings, onSettingsChange }) => 
                 {row.map((cell, colIndex) => {
                   const isRevealed = cell.isRevealed;
                   const isMine = cell.isMine;
-                  const cellStyle = isRevealed ? styles.revealedCell : styles.cell;
+                  const cellStyle = [
+                    isRevealed ? styles.revealedCell : styles.cell,
+                    isMine && isDevMode && styles.devModeMine
+                  ];
                   
                   const textStyle = [
                     styles.cellText,
-                    isRevealed && !isMine && getNumberStyle(cell.adjacentMines),
-                    isMine && isDevMode && styles.devModeMine
+                    isRevealed && !isMine && getNumberStyle(cell.adjacentMines)
                   ];
 
                   return (
