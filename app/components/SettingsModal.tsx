@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, View, Text, TouchableOpacity, StyleSheet, TextInput, Keyboard, TouchableWithoutFeedback } from 'react-native';
+import { Modal, View, Text, TouchableOpacity, StyleSheet, TextInput, Keyboard, TouchableWithoutFeedback, ScrollView } from 'react-native';
 
 interface SettingsModalProps {
   visible: boolean;
@@ -102,7 +102,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                 </TouchableOpacity>
               </View>
 
-              <View style={styles.content}>
+              <ScrollView style={styles.content}>
                 <Text style={styles.sectionTitle}>Dificuldades Predefinidas</Text>
                 <View style={styles.presetButtons}>
                   <TouchableOpacity
@@ -129,29 +129,39 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                 
                 <View style={styles.inputContainer}>
                   <Text style={styles.label}>Tamanho do Tabuleiro:</Text>
-                  <TextInput
-                    style={[styles.input, selectedDifficulty === 'custom' && styles.selectedInput]}
-                    value={boardSize}
-                    onChangeText={(value) => handleCustomInput(value, true)}
-                    keyboardType="number-pad"
-                    placeholder="5-10"
-                    returnKeyType="done"
-                    onSubmitEditing={Keyboard.dismiss}
-                  />
+                  <View style={styles.inputRow}>
+                    <TextInput
+                      style={[styles.input, selectedDifficulty === 'custom' && styles.selectedInput, styles.percentageInput]}
+                      value={boardSize}
+                      onChangeText={(value) => handleCustomInput(value, true)}
+                      keyboardType="number-pad"
+                      placeholder="5-10"
+                      returnKeyType="done"
+                      onSubmitEditing={Keyboard.dismiss}
+                    />
+                    <View style={[styles.input, styles.minesCountDisplay]}>
+                      <Text>{(parseInt(boardSize) || 5) * (parseInt(boardSize) || 5)} células</Text>
+                    </View>
+                  </View>
                   <Text style={styles.hint}>Mínimo: 5, Máximo: 10</Text>
                 </View>
 
                 <View style={styles.inputContainer}>
                   <Text style={styles.label}>Porcentagem de Minas (%):</Text>
-                  <TextInput
-                    style={[styles.input, selectedDifficulty === 'custom' && styles.selectedInput]}
-                    value={minePercentage}
-                    onChangeText={(value) => handleCustomInput(value, false)}
-                    keyboardType="number-pad"
-                    placeholder="10-30"
-                    returnKeyType="done"
-                    onSubmitEditing={Keyboard.dismiss}
-                  />
+                  <View style={styles.inputRow}>
+                    <TextInput
+                      style={[styles.input, selectedDifficulty === 'custom' && styles.selectedInput, styles.percentageInput]}
+                      value={minePercentage}
+                      onChangeText={(value) => handleCustomInput(value, false)}
+                      keyboardType="number-pad"
+                      placeholder="10-30"
+                      returnKeyType="done"
+                      onSubmitEditing={Keyboard.dismiss}
+                    />
+                    <View style={[styles.input, styles.minesCountDisplay]}>
+                      <Text>{Math.floor((parseInt(boardSize) || 5) * (parseInt(boardSize) || 5) * (parseInt(minePercentage) || 15) / 100)} minas</Text>
+                    </View>
+                  </View>
                   <Text style={styles.hint}>Mínimo: 10%, Máximo: 30%</Text>
                 </View>
 
@@ -159,9 +169,9 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                   style={styles.applyButton}
                   onPress={handleApply}
                 >
-                  <Text>Aplicar</Text>
+                  <Text style={styles.applyButtonText}>Aplicar</Text>
                 </TouchableOpacity>
-              </View>
+              </ScrollView>
             </View>
           </TouchableWithoutFeedback>
         </View>
@@ -185,6 +195,7 @@ const styles = StyleSheet.create({
     borderBottomColor: '#808080',
     borderRightColor: '#808080',
     width: '90%',
+    maxHeight: '80%',
   },
   titleBar: {
     flexDirection: 'row',
@@ -273,7 +284,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   applyButton: {
-    alignSelf: 'center',
+    width: '100%',
     padding: 10,
     backgroundColor: '#c0c0c0',
     borderWidth: 2,
@@ -281,9 +292,27 @@ const styles = StyleSheet.create({
     borderLeftColor: '#fff',
     borderBottomColor: '#808080',
     borderRightColor: '#808080',
-    minWidth: 100,
     alignItems: 'center',
-    marginTop: 10,
+    marginTop: 20,
+  },
+  applyButtonText: {
+    fontSize: 16,
+    color: '#000',
+    fontWeight: 'bold',
+  },
+  inputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  percentageInput: {
+    flex: 1,
+  },
+  minesCountDisplay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#e0e0e0',
   },
 });
 

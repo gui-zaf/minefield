@@ -23,36 +23,36 @@ const HelpModal: React.FC<HelpModalProps> = ({ visible, onClose }) => {
           </View>
           
           <ScrollView style={styles.scrollView}>
-            <Text style={styles.sectionTitle}>Objetivo</Text>
+            <Text style={styles.sectionTitle}>Bem-vindo ao Campo Minado!</Text>
             <Text style={styles.text}>
-              Revelar todas as células seguras sem clicar em nenhuma mina.
+              O objetivo é revelar todas as células sem minas. Vamos aprender como jogar!
             </Text>
 
-            <Text style={styles.sectionTitle}>Controles</Text>
+            <Text style={styles.sectionTitle}>Revelando Células</Text>
             <Text style={styles.text}>
-              • Toque simples: Revela uma célula{'\n'}
-              • Toque longo: Coloca/Remove uma bandeira 🚩
+              Toque em uma célula para revelá-la. Se houver um número, ele indica quantas minas estão ao redor.
             </Text>
 
             <Text style={styles.sectionTitle}>Números e Cores</Text>
             <View style={styles.numberGrid}>
               <Text style={[styles.text, styles.number1]}>1</Text>
-              <Text style={styles.text}>- Uma mina próxima</Text>
+              <Text style={styles.text}>- uma mina próxima</Text>
               <Text style={[styles.text, styles.number2]}>2</Text>
-              <Text style={styles.text}>- Duas minas próximas</Text>
+              <Text style={styles.text}>- duas minas próximas</Text>
               <Text style={[styles.text, styles.number3]}>3</Text>
-              <Text style={styles.text}>- Três minas próximas</Text>
-              <Text style={[styles.text, styles.number4]}>4</Text>
-              <Text style={styles.text}>- Quatro minas próximas</Text>
-              <Text style={[styles.text, styles.number5]}>5</Text>
-              <Text style={styles.text}>- Cinco minas próximas</Text>
-              <Text style={[styles.text, styles.number6]}>6</Text>
-              <Text style={styles.text}>- Seis minas próximas</Text>
-              <Text style={[styles.text, styles.number7]}>7</Text>
-              <Text style={styles.text}>- Sete minas próximas</Text>
-              <Text style={[styles.text, styles.number8]}>8</Text>
-              <Text style={styles.text}>- Oito minas próximas</Text>
+              <Text style={styles.text}>- três minas próximas</Text>
+              <Text style={styles.text}>n - n minas próximas</Text>
             </View>
+
+            <Text style={styles.sectionTitle}>Marcando Minas</Text>
+            <Text style={styles.text}>
+              Pressione e segure uma célula para marcar onde você acha que há uma mina com uma bandeira 🚩
+            </Text>
+
+            <Text style={styles.sectionTitle}>Células Vazias</Text>
+            <Text style={styles.text}>
+              Quando você revelar uma célula vazia, todas as células vazias adjacentes também serão reveladas automaticamente.
+            </Text>
 
             <Text style={styles.sectionTitle}>Dicas</Text>
             <Text style={styles.text}>
