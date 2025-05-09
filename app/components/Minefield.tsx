@@ -59,7 +59,6 @@ const Minefield: React.FC<MinefieldProps> = ({ settings, onSettingsChange }) => 
   });
   const [flagCount, setFlagCount] = useState(0);
   const [totalMines, setTotalMines] = useState(0);
-  const [isDevMode, setIsDevMode] = useState(false);
 
   const getCurrentBoardSize = () => {
     return difficulty === 'custom' ? customSettings.boardSize : BOARD_SIZES[difficulty];
@@ -245,7 +244,7 @@ const Minefield: React.FC<MinefieldProps> = ({ settings, onSettingsChange }) => 
     const newBoard = [...board];
     newBoard[row][col].isRevealed = true;
 
-    if (board[row][col].isMine && !isDevMode) {
+    if (board[row][col].isMine) {
       for (let i = 0; i < board.length; i++) {
         for (let j = 0; j < board[i].length; j++) {
           if (board[i][j].isMine) {
@@ -401,8 +400,6 @@ const Minefield: React.FC<MinefieldProps> = ({ settings, onSettingsChange }) => 
             gameTime={gameTime}
             gameStatus={gameStatus}
             onReset={() => startNewGame(difficulty)}
-            isDevMode={isDevMode}
-            onDevModeActivate={() => setIsDevMode(prev => !prev)}
           />
         </View>
 
@@ -421,10 +418,7 @@ const Minefield: React.FC<MinefieldProps> = ({ settings, onSettingsChange }) => 
                 {row.map((cell, colIndex) => {
                   const isRevealed = cell.isRevealed;
                   const isMine = cell.isMine;
-                  const cellStyle = [
-                    isRevealed ? styles.revealedCell : styles.cell,
-                    isMine && isDevMode && styles.devModeMine
-                  ];
+                  const cellStyle = isRevealed ? styles.revealedCell : styles.cell;
                   
                   const textStyle = [
                     styles.cellText,
@@ -449,8 +443,6 @@ const Minefield: React.FC<MinefieldProps> = ({ settings, onSettingsChange }) => 
                             : ''
                           : cell.isFlagged
                           ? '🚩'
-                          : isDevMode && isMine
-                          ? '💣'
                           : ''}
                       </Text>
                     </TouchableOpacity>
